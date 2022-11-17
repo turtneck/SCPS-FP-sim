@@ -8,7 +8,8 @@ Ability to apply knowledge gained to an engineering problem.
     You can use any information in the course in addition to what you learned independently.
 '''
 
-
+#TOD0: graph out nodes as different things in space station that would need the internet and how they would be connected
+    #involves more research
 
 try:
     import math
