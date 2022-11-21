@@ -114,10 +114,8 @@ instead of using ABOR in the middle of STOR's runtime"
         self.add_colors=[]
 
         self.stream_mode = False
-        self.autorestart = False    #0: AutoRest off, 1:AutoRest on
-        self.abort = 0     #0:off, 1:ABOR, 2:INTR
-                    #pg19 table
-                    #TODO: STOR forcederror, ABOR, INTR, timeout; ARST, NARS
+        self.autorestart = False    #0: AutoRest off, 1:AutoRest on (ARST, NARS)
+        self.abort = 0     #0:off, 1:ABOR, 2:INTR - pg19 table
 
         #data
         self.curr_datatype = None
@@ -127,7 +125,7 @@ instead of using ABOR in the middle of STOR's runtime"
         self.partial_data = None
 
         #build and display ISS graph
-        self.build_graph(not(debug))
+        self.build_graph(not debug)
 
         self.cmd_ex()
         self.main_loop()
@@ -576,21 +574,25 @@ STOR lol lol.txt ASCII
 
     def SITE(self):
         #blank on the list of cmd explanation, bruh
+        print("[[[Service commands: The document never described this cmd]]]")
         return
 
     def ACCT(self):
         #Access control command
         #never described
+        print("[[[Access control command: The document never described this cmd]]]")
         return
 
     def CDUP(self):
         #Access control command
         #never described
+        print("[[[Access control command: The document never described this cmd]]]")
         return
 
     def NLST(self):
         #Service command
         #never described
+        print("[[[The document never described this cmd]]]")
         return
 
     #xml like
