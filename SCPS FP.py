@@ -65,7 +65,7 @@ try:
     import sys
     import random
 except Exception as e:
-    print("Failed to import some modules, if this is not a simulation fix this before continuing")
+    print("Failed to import some modules, likely missing")
     print(F"Exception raised: {e}")
 
 
@@ -177,21 +177,25 @@ Enter: "CWD PASS ___" to start the sim
         print("====NOT REAL CMD, JUST FOR DEBUG OF THIS SIM====")
 
         #flags
-        print("\nFlags:")
+        print("\nFlags:----")
         print(F"autorestart: {self.autorestart}")
         print(F"abort:       {self.abort}")
         print(F"flag_BETS:   {self.flag_BETS}")
         print(F"fpSuppressReplyText: {self.fpSuppressReplyText}")
+        print(F"pass_lock:   {self.pass_lock}")
+        print(F"mode:        {self.mode}")
+
         #local temp data
-        print("\nLocal Temp Data:")
+        print("\nLocal Temp Data:----")
         print(F"curr_datatype: {self.curr_datatype}")
         print(F"data_path:     {self.data_path}")
         print(F"data:          {self.data}")
         print(F"partial_data:  {self.partial_data}")
 
         #server data
-        print("\nServer Data:")
-        print("filename, data, filetype")
+        print("\nServer Data:----")
+        print("filename, data, filetype:")
+        if not self.dataname_list: print("[[NO DATA]]")
         for i in range(len(self.dataname_list)):
             print(F"{i}:\t{self.dataname_list[i]}, {str(self.data_list[i])}, {self.datatype_list[i]}")
 
@@ -217,7 +221,9 @@ Enter: "CWD PASS ___" to start the sim
         if first: print("==================================")
 
     def main_loop(self):
+        if self.loud_debug: print("==================================")
         print("Use \"HELP\" for a list of commands and examples, or \"HELP _CMD_ for info on a command\"")
+        print("Also see \"debug\" for a list of the current variables in use, including list of uploaded data on server")
         while True:
             print("==================================")
             inp = input("enter command: ")  # CMD_NAME INPUTS
@@ -234,7 +240,7 @@ Enter: "CWD PASS ___" to start the sim
         #perform that command with arr as input to it
         #try:
         if cmd == "STRU":
-            self.STRU()
+            print("DIRECT CONSOLE ACCESS DENIED")
         elif cmd == "TYPE":
             if not arr:
                 self.TYPE("curr",None,True,True)
@@ -250,8 +256,7 @@ Enter: "CWD PASS ___" to start the sim
         elif cmd == "RETR":
             print("THIS IS A SERVER-CONSOLE COMMAND")
         elif cmd == "PROXY":
-            #self.PROXY()
-            return
+            self.PROXY()
         elif cmd == "REST":
             print("DIRECT CONSOLE ACCESS DENIED")
         elif cmd == "USER":
@@ -269,19 +274,15 @@ Enter: "CWD PASS ___" to start the sim
         elif cmd == "QUIT":
             self.QUIT()
         elif cmd == "PORT":
-            #self.PORT()
-            return
+            print("DIRECT CONSOLE ACCESS DENIED")
         elif cmd == "PASV":
-            #self.PASV()
-            return
+            print("DIRECT CONSOLE ACCESS DENIED")
         elif cmd == "MODE":
             print("DIRECT CONSOLE ACCESS DENIED")
         elif cmd == "RNFR":
-            #self.RNFR()
-            return
+            self.RNFR()
         elif cmd == "RNTO":
-            #self.RNTO()
-            return
+            self.RNTO()
         elif cmd == "ABOR":
             self.ABOR()
         elif cmd == "DELE":
@@ -291,8 +292,7 @@ Enter: "CWD PASS ___" to start the sim
         elif cmd == "MKD":
             print("THIS IS A SERVER-CONSOLE COMMAND")
         elif cmd == "LIST":
-            #self.LIST()
-            return
+            self.LIST(arr)
         elif cmd == "STAT":
             #self.STAT()
             return
@@ -318,11 +318,9 @@ Enter: "CWD PASS ___" to start the sim
         elif cmd == "NARS":
             self.NARS()
         elif cmd == "NBES":
-            #self.NBES()
-            return
+            self.NBES()
         elif cmd == "NSUP":
-            #self.NSUP()
-            return
+            self.NSUP()
         elif cmd == "READ":
             if len(arr) == 3:
                 self.READ(arr[0], arr[1], arr[2])
@@ -380,9 +378,9 @@ UPDT lol ./lol.txt ASCII    : send a txt file to the server then delete it
 DELE ./lol.txt
 ---
 READ 123456789 ./lol.txt ASCII   : send first half of data to a server,
-debug                              then the other in another transmission
-                                   (debug lets you see the temp data from other half)
-
+                                   then the other in another transmission
+---
+LIST lol ./lol.txt ASCII lmao ./lmao.txt ASCII    :send multiple files in one command
 
 CMD LIST:
 USER, PASS, CWD, QUIT, PORT, PASV, TYPE, STRU, 
@@ -396,8 +394,8 @@ READ, SIZE, SUPP, UPDT
 """)
 
     #actual commands
-    def STRU(self):
-        return
+    def STRU(self,inp):
+        print(F"USER-USER_REPO: PACKET STRUCTURE: {inp}")
 
     def TYPE(self,file,filetype=None,ret=False,verbose=False):
         #ret= 0:return, 1:set
@@ -430,12 +428,16 @@ READ, SIZE, SUPP, UPDT
         4) the server-FP shall save restart marker rrrr for restart;
         '''
         #check for connection to server
-        if "ISS Server" not in self.adj_better("User console"): raise TypeError("CONSOLE NOT CONNECTED TO SERVER: STOR()")
-        if name[:2] != "./": raise TypeError('FILENAME MUST START WITH "./" FOR DIRECTORY PURPOSES')
+        if "ISS Server" not in self.adj_better("User console"): raise TypeError("STOR(): CONSOLE NOT CONNECTED TO SERVER: STOR()")
+        if name[:2] != "./": raise TypeError(F'STOR(): {name}: FILENAME MUST START WITH "./" FOR DIRECTORY PURPOSES')
+
+        if file_type == "PACKET": self.STRU("R")
 
         #1.)
         #sending from console to server the data from the console located at path
         self.MODE()
+        self.PORT()
+        self.PASV(False)
         print(F"USER-SERVER: SIZE {name}")
         self.data_path = name
         #self.curr_datatype = file_type
@@ -516,9 +518,11 @@ READ, SIZE, SUPP, UPDT
             self.REST(t_temp)
             self.MODE()
 
+        #success
         if not recurrsion:
             #2.)
             #confirmation recieved (is sim)
+            self.PASV(True)
             self.MKD(data,name,file_type)
             if not self.fpSuppressReplyText: print(F'SERVER-USER: 213 {self.data_path} SIZE {self.SIZE("curr",False)}')
         return
@@ -551,7 +555,7 @@ READ, SIZE, SUPP, UPDT
         – send ‘REST ssss’ to the sending server-FP, where ssss = rrrr;
         4) each server shall save the received restart markers for restart.
         '''
-        return
+        print("Depreciated for this sim; Absorbed into STOR")
 
     def REST(self,inp):
         #RESTART
@@ -616,14 +620,17 @@ READ, SIZE, SUPP, UPDT
         - Value of each field is transmitted as a decimal number (in character string representation)
         - Fields are separated by commas
         '''
+        print("USER-SERVER: 172,8890,1337,6880\t\t(made up for this sim)")
         #return some kinda port
         return
 
-    def PASV(self):
+    def PASV(self,part=False):
         '''
         - Server-FP has implemented PASV
         - User-FP sends PASV per transfer
         '''
+        if not part: print("USER-SERVER: [Server Port Request]")
+        else: print("SERVER-USER: 452,92,806,528\t\t(made up for this sim)")
         return
 
     def MODE(self):
@@ -631,11 +638,10 @@ READ, SIZE, SUPP, UPDT
         self.mode = not self.mode
 
     def RNFR(self):
-        return
+        print("[[[Service commands: Description missing from released Document]]]")
 
     def RNTO(self):
-        #return to
-        return
+        print("[[[Service commands: Description missing from released Document]]]")
 
     def ABOR(self):
         #abort
@@ -693,11 +699,11 @@ READ, SIZE, SUPP, UPDT
             self.data_list.append(self.data)
             self.datatype_list.append(self.curr_datatype)
         else:
-            print(F"SERVER-SERVER: REPLACED {inp} TO SITE")
+            print(F"SERVER-SERVER: REPLACED {name} TO SITE")
             self.data = data
             self.curr_datatype = file_type
 
-    def LIST(self):
+    def LIST(self,arr):
         '''
         - Implied Type AN is used
         - Server sends list to the passive DTP
@@ -708,8 +714,12 @@ READ, SIZE, SUPP, UPDT
         - Server accesses user’s current working directory or default
           directory if null argument is used with LIST
         '''
-        #list files?
-        return
+        if len(arr)%3 != 0: raise TypeError("LIST(): INVALID LIST")
+        new_arr = arr
+        while new_arr:
+            print(F"arr: {new_arr}")
+            self.STOR(new_arr[0],new_arr[1],new_arr[2])
+            new_arr.pop(0); new_arr.pop(0); new_arr.pop(0)
 
     def STAT(self):
         '''
@@ -728,26 +738,22 @@ READ, SIZE, SUPP, UPDT
 
     def SITE(self):
         #blank on the list of cmd explanation, bruh
-        print("[[[Service commands: The document never described this cmd]]]")
-        return
+        print("[[[Service commands: Description missing from released Document]]]")
 
     def ACCT(self):
         #Access control command
         #never described
-        print("[[[Access control command: The document never described this cmd]]]")
-        return
+        print("[[[Access control command: Description missing from released Document]]]")
 
     def CDUP(self):
         #Access control command
         #never described
-        print("[[[Access control command: The document never described this cmd]]]")
-        return
+        print("[[[Access control command: Description missing from released Document]]]")
 
     def NLST(self):
         #Service command
         #never described
-        print("[[[The document never described this cmd]]]")
-        return
+        print("[[[Description missing from released Document]]]")
 
     #xml like
     def ARST(self):
@@ -776,6 +782,7 @@ READ, SIZE, SUPP, UPDT
         #Server turns on its BETS flag
         #Server saves BETS fill code to use during the file transfer
         #BETS <BETS-fill-code> <CRLF>
+        self.flag_BETS = True
         return
 
     def COPY(self):
@@ -867,6 +874,7 @@ READ, SIZE, SUPP, UPDT
         '''
         #Server turn off its BETS flag
         #NBES <CRLF>
+        self.flag_BETS = False
         return
 
     def NSUP(self):
@@ -878,7 +886,7 @@ READ, SIZE, SUPP, UPDT
         shall have the text included in the reply.
         '''
         #NSUP <CRLF>
-        return
+        self.fpSuppressReplyText = False
 
     def READ(self,data,filename,filetype,forced_TO=False):
         #RECORD READ
@@ -958,7 +966,7 @@ READ, SIZE, SUPP, UPDT
         fpSuppressReplyText to ‘TRUE’ (enabled).
         '''
         #SUPP <CRLF>
-        self.fpSuppressReplyText = not self.fpSuppressReplyText
+        self.fpSuppressReplyText = True
 
     def UPDT(self,data,filename,filetype,forced_TO=False):
         #RECORD UPDATE
@@ -1022,17 +1030,17 @@ READ, SIZE, SUPP, UPDT
 
         #HELP _CMD_
         if cmd == "STRU":
-            print(F"{cmd}: ")
+            print(F"{cmd}: User-Console Command to log structure of Data Packet;\nNot Accessable by console")
         elif cmd == "TYPE":
             print(F"{cmd}: Return or Set filetype of file given its name;\nSee HELP for more details/uses")
         elif cmd == "STOR":
             print(F"{cmd}: Store File;\nGiven file, filename, and filetype;\nSee HELP for more details/uses")
         elif cmd == "RETR":
-            print(F"{cmd}: Server-Console Command to log restart marker;\nNot Accessable")
+            print(F"{cmd}: Server-Console Command to log restart marker;\nNot Accessable by console")
         elif cmd == "PROXY":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Depreciated for this sim: absorbed into STOR")
         elif cmd == "REST":
-            print(F"{cmd}: User-Console Command to log restart marker;\nNot Accessable")
+            print(F"{cmd}: User-Console Command to log restart marker;\nNot Accessable by console")
         elif cmd == "USER":
             print(F"{cmd}: Not actually command, but rather a console var replaced with the CMD you put in.\nEx: READ,STOR,TYPE,etc")
         elif cmd == "PASS":
@@ -1042,39 +1050,39 @@ READ, SIZE, SUPP, UPDT
         elif cmd == "QUIT":
             print(F"{cmd}: Log out of Server")
         elif cmd == "PORT":
-            print(F"{cmd}: ")
+            print(F"{cmd}: User-to-Server-Console Command that sends IP for stream mode for each transfer;\nNot Accessable by console")
         elif cmd == "PASV":
-            print(F"{cmd}: ")
+            print(F"{cmd}: User-to-Server-Console Command that requests IP of Server for each transfer;\nNot Accessable by console")
         elif cmd == "MODE":
-            print(F"{cmd}: User-Console Command to toggle if it transmittion;\nNot Accessable")
+            print(F"{cmd}: User-Console Command to toggle if it transmittion;\nNot Accessable by console")
         elif cmd == "RNFR":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Service command: Description missing from released Document")
         elif cmd == "RNTO":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Service command: Description missing from released Document")
         elif cmd == "ABOR":
             print(F"{cmd}: Set ABORT Flag for STOR operation;\nSee HELP for more details/uses")
         elif cmd == "DELE":
             print(F"{cmd}: User-to-Server-Console Command to remove a file;\nGiven filename")
         elif cmd == "RMD":
-            print(F"{cmd}: Server-Console Command to remove a file;\nNot Accessable")
+            print(F"{cmd}: Server-Console Command to remove a file;\nNot Accessable by console")
         elif cmd == "MKD":
-            print(F"{cmd}: Server-Console Command to add a file;\nNot Accessable")
+            print(F"{cmd}: Server-Console Command to add a file;\nNot Accessable by console")
         elif cmd == "LIST":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Store multiple files in one command;\nGiven file, filename, and filetype;\nSee HELP for more details/uses")
         elif cmd == "STAT":
             print(F"{cmd}: ")
         elif cmd == "SITE":
-            print(F"{cmd}: Service commands: The document never described this cmd")
+            print(F"{cmd}: Service commands: Description missing from released Document")
         elif cmd == "ACCT":
-            print(F"{cmd}: Access control command: The document never described this cmd")
+            print(F"{cmd}: Access control command: Description missing from released Document")
         elif cmd == "CDUP":
-            print(F"{cmd}: Access control command: The document never described this cmd")
+            print(F"{cmd}: Access control command: Description missing from released Document")
         elif cmd == "NLST":
-            print(F"{cmd}: The document never described this cmd")
+            print(F"{cmd}: Description missing from released Document")
         elif cmd == "ARST":
-            print(F"{cmd}: User-Console turn on its autorestart flag")
+            print(F"{cmd}: User-Console command to turn on its autorestart flag")
         elif cmd == "BETS":
-            print(F"{cmd}: User-Console turn on its BETS flag")
+            print(F"{cmd}: User-Console command to turn on its BETS flag")
         elif cmd == "COPY":
             print(F"{cmd}: ")
         elif cmd == "IDLE":
@@ -1082,21 +1090,23 @@ READ, SIZE, SUPP, UPDT
         elif cmd == "INTR":
             print(F"{cmd}: Set INTR Flag for STOR operation;\nSee HELP for more details/uses")
         elif cmd == "NARS":
-            print(F"{cmd}: User-Console turn off its autorestart flag")
+            print(F"{cmd}: User-Console command to turn off its autorestart flag")
         elif cmd == "NBES":
-            print(F"{cmd}: User-Console turn off its BETS flag")
+            print(F"{cmd}: User-Console command to turn off its BETS flag")
         elif cmd == "NSUP":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Unsuppress SERVER-USER Replies;\nfpSuppressReplyText = False")
         elif cmd == "READ":
             print(F"{cmd}: Store File;\nUploading one half of the data, then the other half;\nGiven file, filename, and filetype; See HELP for more details/uses")
         elif cmd == "SIZE":
             print(F"{cmd}: Find size of file given its name; Ex: SIZE ./lol.txt")
         elif cmd == "SUPP":
-            print(F"{cmd}: Toggle SERVER-USER Replies")
+            print(F"{cmd}: Suppress SERVER-USER Replies;\nfpSuppressReplyText = True")
         elif cmd == "UPDT":
             print(F"{cmd}: Store File;\nUpdating to the server duplicate filenames;\nGiven file, filename, and filetype; See HELP for more details/uses")
         elif cmd == "HELP":
             print(F"{cmd}: Gives info on CMD's")
+        elif cmd == "debug":
+            print(F"{cmd}: List out class variables")
         else:
             print("ERROR: HELP: CMD NOT RECOGNIZED")
 '''
