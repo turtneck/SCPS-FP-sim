@@ -89,7 +89,7 @@ class FP:
         #https://web.archive.org/web/20130423142305/http://public.ccsds.org/publications/archive/717x0b1s.pdf
         print("network - init")
         print(
-"""\n==============NOTICE==============
+'''\n==============NOTICE==============
 Some funcs arent their complete purpose as mandated
 in reports due to unability to wait apporpriately to a seperate simualted server.
 
@@ -98,18 +98,23 @@ still simulating the result between the two.
 
 EX: ABOR becoming a set function that reacts with STOR
 instead of using ABOR in the middle of STOR's runtime
-==================================""")
+==================================
+"psst, hey. the login password is: ECE1150"
+Enter: "CWD PASS ___" to start the sim
+(not required in debug mode)''')
+
+        self.loud_debug = debug
 
         self.G = None
         self.add_colors=[]
 
-        self.stream_mode = False
+        #self.stream_mode = False
         self.autorestart = False    #0: AutoRest off, 1:AutoRest on (ARST, NARS)
                                     #need more info
         self.abort = 0     #0:off, 1:ABOR, 2:INTR - pg19 table
 
         #data
-        self.curr_datatype = None
+        self.curr_datatype = None   #ASCII,IMAGE,PACKET
         self.data_path = None    #str ./__filename__
         self.data = None
         self.dataname_list = []
@@ -117,34 +122,16 @@ instead of using ABOR in the middle of STOR's runtime
         self.datatype_list = []
         self.partial_data = None
         self.flag_BETS = None  #need more info
+        self.fpSuppressReplyText = False
+        self.pass_lock = None
+        self.mode = False   #if in transmittion
 
         #build and display ISS graph
         self.build_graph(not debug)
 
         #self.cmd_ex()
-        print("Use \"HELP\" for a list of commands and examples, or \"HELP _CMD_ for info on a command\"")
+        if not debug: self.lock(True)
         self.main_loop()
-
-    '''
-    def testGraph(self):
-        self.G = nx.Graph()
-        self.G.add_nodes_from(
-            [("one", {"color": "red"}),
-             (2, {"color": "green"})])
-        self.G.add_edge("one", 2)
-        nx.draw(self.G, node_color=['red','blue'], with_labels=True, font_weight='bold')
-        #nx.draw(self.G, with_labels=True, font_weight='bold')
-        plt.show()
-
-    def matplot_test(self):
-        self.G = nx.Graph()
-        self.G = nx.petersen_graph()
-        subax1 = plt.subplot(121)
-        nx.draw(self.G, with_labels=True, font_weight='bold')
-        subax2 = plt.subplot(122)
-        nx.draw_shell(self.G, nlist=[range(5, 10), range(5)], with_labels=True, font_weight='bold')
-        plt.show()
-        '''
 
     def build_graph(self,show=True):
         self.G = nx.Graph()
@@ -186,7 +173,51 @@ instead of using ABOR in the middle of STOR's runtime
             self.add_colors.append("red")
             self.G.add_edge(l[i],"ISS Server")
 
+    def debug(self):
+        print("====NOT REAL CMD, JUST FOR DEBUG OF THIS SIM====")
+
+        #flags
+        print("\nFlags:")
+        print(F"autorestart: {self.autorestart}")
+        print(F"abort:       {self.abort}")
+        print(F"flag_BETS:   {self.flag_BETS}")
+        print(F"fpSuppressReplyText: {self.fpSuppressReplyText}")
+        #local temp data
+        print("\nLocal Temp Data:")
+        print(F"curr_datatype: {self.curr_datatype}")
+        print(F"data_path:     {self.data_path}")
+        print(F"data:          {self.data}")
+        print(F"partial_data:  {self.partial_data}")
+
+        #server data
+        print("\nServer Data:")
+        print("filename, data, filetype")
+        for i in range(len(self.dataname_list)):
+            print(F"{i}:\t{self.dataname_list[i]}, {str(self.data_list[i])}, {self.datatype_list[i]}")
+
+    def lock(self,first=False):
+        #"CWD PASS ___"
+        while self.pass_lock != "ECE1150":
+            print("==================================")
+            inp = input("enter command: ")  # CMD_NAME INPUTS
+            t_ary = inp.split(" ")
+
+            if len(t_ary)==3:   #correct fields
+                if str(t_ary[0]) == "CWD" and str(t_ary[1]) == "PASS":   #correct command
+                    self.pass_lock = str(t_ary[2])
+                    if self.pass_lock != "ECE1150": print("INCORRECT LOGIN")
+                else:
+                    print(F"ACESS DENIED")
+            elif len(t_ary)>3 and str(t_ary[0]) == "CWD" and str(t_ary[1]) == "PASS":
+                print(F"ERROR RUNNING COMMAND")
+            else:
+                print(F"ACESS DENIED")
+
+        print("[[ACCESS GRANTED]]")
+        if first: print("==================================")
+
     def main_loop(self):
+        print("Use \"HELP\" for a list of commands and examples, or \"HELP _CMD_ for info on a command\"")
         while True:
             print("==================================")
             inp = input("enter command: ")  # CMD_NAME INPUTS
@@ -219,7 +250,8 @@ instead of using ABOR in the middle of STOR's runtime
         elif cmd == "RETR":
             print("THIS IS A SERVER-CONSOLE COMMAND")
         elif cmd == "PROXY":
-            self.PROXY()
+            #self.PROXY()
+            return
         elif cmd == "REST":
             print("DIRECT CONSOLE ACCESS DENIED")
         elif cmd == "USER":
@@ -227,19 +259,29 @@ instead of using ABOR in the middle of STOR's runtime
         elif cmd == "PASS":
             self.PASS()
         elif cmd == "CWD":
-            self.CWD()
+            if len(arr)>=2:   #not empty, more then 2 fields
+                if str(arr[0]) == "PASS":   #correct command
+                    self.CWD(arr[1])
+                else:
+                    print(F"ERROR RUNNING COMMAND, NOT FOLLOWED BY PASS")
+            else:
+                print(F"ERROR RUNNING COMMAND")
         elif cmd == "QUIT":
             self.QUIT()
         elif cmd == "PORT":
-            self.PORT()
+            #self.PORT()
+            return
         elif cmd == "PASV":
-            self.PASV()
+            #self.PASV()
+            return
         elif cmd == "MODE":
-            self.MODE()
+            print("DIRECT CONSOLE ACCESS DENIED")
         elif cmd == "RNFR":
-            self.RNFR()
+            #self.RNFR()
+            return
         elif cmd == "RNTO":
-            self.RNTO()
+            #self.RNTO()
+            return
         elif cmd == "ABOR":
             self.ABOR()
         elif cmd == "DELE":
@@ -249,9 +291,11 @@ instead of using ABOR in the middle of STOR's runtime
         elif cmd == "MKD":
             print("THIS IS A SERVER-CONSOLE COMMAND")
         elif cmd == "LIST":
-            self.LIST()
+            #self.LIST()
+            return
         elif cmd == "STAT":
-            self.STAT()
+            #self.STAT()
+            return
         elif cmd == "SITE":
             self.SITE()
         elif cmd == "ACCT":
@@ -265,7 +309,8 @@ instead of using ABOR in the middle of STOR's runtime
         elif cmd == "BETS":
             self.BETS()
         elif cmd == "COPY":
-            self.COPY()
+            #self.COPY()
+            return
         elif cmd == "IDLE":
             self.IDLE(float(arr[0]))
         elif cmd == "INTR":
@@ -273,22 +318,32 @@ instead of using ABOR in the middle of STOR's runtime
         elif cmd == "NARS":
             self.NARS()
         elif cmd == "NBES":
-            self.NBES()
+            #self.NBES()
+            return
         elif cmd == "NSUP":
-            self.NSUP()
+            #self.NSUP()
+            return
         elif cmd == "READ":
-            self.temp()
+            if len(arr) == 3:
+                self.READ(arr[0], arr[1], arr[2])
+            else:
+                self.READ(arr[0], arr[1], arr[2], arr[3])
         elif cmd == "SIZE":
             print(F"FILE SIZE: {self.SIZE(arr[0],True,True)}")
         elif cmd == "SUPP":
             self.SUPP()
         elif cmd == "UPDT":
-            self.UPDT()
+            if len(arr) == 3:
+                self.UPDT(arr[0], arr[1], arr[2])
+            else:
+                self.UPDT(arr[0], arr[1], arr[2], arr[3])
         elif cmd == "HELP":
             if not arr:
                 self.HELP()
             else:
                 self.HELP(arr[0])
+        elif cmd == "debug":
+            self.debug()
         else:
             print("ERROR: CMD NOT RECOGNIZED")
         #except Exception as e:
@@ -299,31 +354,42 @@ instead of using ABOR in the middle of STOR's runtime
     def cmd_ex(self):
         print(
 """Examples:
-STOR lol lol.txt ASCII      : send txt file
+STOR lol ./lol.txt ASCII    : send txt file
 ---
-STOR lol lol.txt ASCII x    : send txt file w/ timed-out transmittion, x time(s)
+STOR lol ./lol.txt ASCII x  : send txt file w/ timed-out transmittion, x time(s)
 ---
 ABOR                        : send txt file w/ aborted transmittion
-STOR lol lol.txt ASCII
+STOR lol ./lol.txt ASCII
 ---
 INTR                        : send txt file w/ interupted transmittion
-STOR lol lol.txt ASCII
+STOR lol ./lol.txt ASCII
 ---
 ARST                        : send txt file w/ Auto Restart
-STOR lol lol.txt ASCII 1      could also use above ABOR and INTR cmd combos for diff results
+STOR lol ./lol.txt ASCII 1    could also use above ABOR and INTR cmd combos for diff results
 ---
-STOR lol lol.txt ASCII      : see lol.txt's filetype
+STOR lol ./lol.txt ASCII    : see lol.txt's filetype
 TYPE ./lol.txt
 ---
-STOR lol lol.txt ASCII      : set lol.txt's filetype to an IMAGE
+STOR lol ./lol.txt ASCII    : set lol.txt's filetype to an IMAGE
 TYPE ./lol.txt IMAGE
+---
+STOR lol ./lol.txt ASCII    : send a txt file to the server then update it
+UPDT lmao ./lol.txt ASCII     also works if both are UPDT commands
+---
+UPDT lol ./lol.txt ASCII    : send a txt file to the server then delete it
+DELE ./lol.txt
+---
+READ 123456789 ./lol.txt ASCII   : send first half of data to a server,
+debug                              then the other in another transmission
+                                   (debug lets you see the temp data from other half)
 
 
 CMD LIST:
 USER, PASS, CWD, QUIT, PORT, PASV, TYPE, STRU, 
 MODE, RETR, STOR, RNFR, RNTO, REST, ABOR, DELE, 
 RMD, MKD, LIST, STAT, SITE, ACCT, CDUP, NLST, 
-NOOP, PWD, STOU, SYST, APPE, HELP, 
+NOOP, PWD, STOU, SYST, APPE, HELP,
+debug (for sim only)
 
 ARST, BETS, COPY, IDLE, INTR, NARS, NBES, NSUP, 
 READ, SIZE, SUPP, UPDT
@@ -365,12 +431,15 @@ READ, SIZE, SUPP, UPDT
         '''
         #check for connection to server
         if "ISS Server" not in self.adj_better("User console"): raise TypeError("CONSOLE NOT CONNECTED TO SERVER: STOR()")
+        if name[:2] != "./": raise TypeError('FILENAME MUST START WITH "./" FOR DIRECTORY PURPOSES')
 
         #1.)
         #sending from console to server the data from the console located at path
-        print(F"USER-SERVER: SIZE ./{name}")
-        self.data_path = "./" + name
-        self.curr_datatype = file_type
+        self.MODE()
+        print(F"USER-SERVER: SIZE {name}")
+        self.data_path = name
+        #self.curr_datatype = file_type
+        self.TYPE(None, file_type)
         self.partial_data = data
 
         #random delay time take to send
@@ -386,7 +455,7 @@ READ, SIZE, SUPP, UPDT
             err-=1
             if not self.autorestart:
                 #dest file didnt existed at start of transfer
-                if "./"+name not in self.dataname_list:
+                if name not in self.dataname_list:
                     if self.abort == 2: #INTR
                         print("USER-USER: [KEEPING PARTIAL FILE]")
                 elif self.abort == 1 or not d_temp:  # ABOR/timeout
@@ -396,20 +465,20 @@ READ, SIZE, SUPP, UPDT
                 else:
                     if self.abort == 2: #INTR
                         print("USER-USER: [DELETING ORIGINAL FILE, KEEPING PARTIAL FILE]")
-                        #self.dataname_list.remove("./" + name)
-                        self.RMD("./" + name)
+                        #self.dataname_list.remove(name)
+                        self.RMD(name)
                     elif self.abort == 1 or not d_temp:  #ABOR/timeout
                         print("USER-USER: [RESTORING ORIGINAL FILE, DELETING PARTIAL FILE]")
                         self.partial_data = None
             #auto rest
             else:
                 if not d_temp:
-                    if "./" + name not in self.dataname_list:  # dest file didnt existed at start of transfer
+                    if name not in self.dataname_list:  # dest file didnt existed at start of transfer
                         print("USER-USER: [KEEPING PARTIAL FILE]")
                     else:
                         print("USER-USER: [DELETING ORIGINAL FILE, KEEPING PARTIAL FILE]")
-                        #self.dataname_list.remove("./" + name)
-                        self.RMD("./" + name)
+                        #self.dataname_list.remove(name)
+                        self.RMD(name)
 
             if self.abort == 1: #ABOR
                 '''
@@ -419,9 +488,10 @@ READ, SIZE, SUPP, UPDT
                 - Server sends 226 reply indicating abort successful
                 '''
                 print("SERVER-SERVER: CLOSED DATA CONNECTION")
-                print("SERVER-USER: 446 [SERVICE REQUEST TERMINATED ABNORMALLY, ABOR]")
-                print("SERVER-USER: 226 [ABORT SUCCESSFUL, ABOR]")
+                if not self.fpSuppressReplyText: print("SERVER-USER: 446 [SERVICE REQUEST TERMINATED ABNORMALLY, ABOR]")
+                if not self.fpSuppressReplyText: print("SERVER-USER: 226 [ABORT SUCCESSFUL, ABOR]")
                 self.abort = 0
+                self.MODE()
                 return
             if self.abort == 2: #INTR
                 '''
@@ -433,7 +503,7 @@ READ, SIZE, SUPP, UPDT
                 4) the user-FP may reinitiate the transfer process by repositioning its local file
                 system using restart marker rrrr and sending ‘REST rrrr’ to the server-FP;
                 '''
-                print(F"SERVER-USER: 256 TRANSFER INTERRUPTED AT {self.SIZE(data,False)} [ABORT SUCCESSFUL, ABOR]")
+                if not self.fpSuppressReplyText: print(F"SERVER-USER: 256 TRANSFER INTERRUPTED AT {self.SIZE(data,False)} [ABORT SUCCESSFUL, ABOR]")
                 self.abort = 0
                 #rest in list in handled right below
 
@@ -444,12 +514,13 @@ READ, SIZE, SUPP, UPDT
             self.IDLE(d_temp/100)
             self.STOR(data,name,file_type,False,True)    #retry
             self.REST(t_temp)
+            self.MODE()
 
         if not recurrsion:
             #2.)
             #confirmation recieved (is sim)
             self.MKD(data,name,file_type)
-            print(F'SERVER-USER: 213 {self.data_path} SIZE {self.SIZE("curr",False)}')
+            if not self.fpSuppressReplyText: print(F'SERVER-USER: 213 {self.data_path} SIZE {self.SIZE("curr",False)}')
         return
 
     def RETR(self,inp):
@@ -504,6 +575,7 @@ READ, SIZE, SUPP, UPDT
         - If a new USER command is issued, all transfer parameters remain unchanged
         - If a new USER command is issued, any file transfer in progress is completed under the old access control parameters
         '''
+        print("Not actually command, but rather a console var replaced with the CMD you put in.\nEx: READ,STOR,TYPE,etc")
         #return user IP?
         return
 
@@ -512,14 +584,19 @@ READ, SIZE, SUPP, UPDT
         - immediately preceded by user command
         - User-DTP hides sensitive password information
         '''
-        return
+        print("ERROR: MUST BE FOLLOWING CWD (for this sim)")
+        #print("Not actually command, but something put after any CMD and its ARG's for security.\nDepreciated for this sim")
 
-    def CWD(self):
+    def CWD(self,inp):
         '''
         - Server permits working with a different directory
         - Server preserves the user’s login/accounting information
         - Server preserves transfer parameter settings
         '''
+        self.pass_lock = inp
+        if self.pass_lock != "ECE1150":
+            print("LOGGED OUT")
+            self.lock()
         return
 
     def QUIT(self):
@@ -527,6 +604,7 @@ READ, SIZE, SUPP, UPDT
         - Server takes the effective action of an abort (ABOR) and a
         logout (QUIT) if an unexpected close occurs on the control connection
         '''
+        self.CWD("")
         #quit
         return
 
@@ -549,7 +627,8 @@ READ, SIZE, SUPP, UPDT
         return
 
     def MODE(self):
-        return
+        #toogle if in transmittion
+        self.mode = not self.mode
 
     def RNFR(self):
         return
@@ -583,19 +662,21 @@ READ, SIZE, SUPP, UPDT
         - Server deletes file specified in the pathname at the server site
         - User-FP provides extra level of protection (‘do you really want to delete’)
         '''
-        inp = input("do you really want to delete? (y/n")
+        inp = input("do you really want to delete? (y/n): ")
         if inp == "y" or inp == "Y":
             self.RMD(data)
         else:
             print("DELETION CANCELED")
 
-    def RMD(self,inp):
+    def RMD(self,inp,verbose=True):
         #Server removes directory specified in pathname from server site
         if inp not in self.dataname_list:
-            #print(F"SERVER-SERVER: MINOR ERROR: MKD(): PATHNAME ./{inp} DOESNT EXIST")
+            if not self.fpSuppressReplyText:
+                print(F"SERVER-USER: RMD(): PATHNAME {inp} DOESNT EXIST")
+                print("SERVER-USER: DELETION CANCELED")
             return
         else:
-            print(F"SERVER-SERVER: DELETED {inp} TO SITE")
+            if verbose: print(F"SERVER-SERVER: DELETED {inp} ON SITE")
             self.datatype_list.pop(self.dataname_list.index(inp))
             self.data_list.pop(self.dataname_list.index(inp))
             self.dataname_list.remove(inp)
@@ -605,7 +686,7 @@ READ, SIZE, SUPP, UPDT
         if name not in self.dataname_list:
             print(F"SERVER-SERVER: ADDED {name} TO SITE")
             self.data = data
-            self.data_path = "./" + name
+            self.data_path = name
             #self.curr_datatype = file_type
             self.TYPE(None,file_type) #set to file type
             self.dataname_list.append(self.data_path)
@@ -799,7 +880,7 @@ READ, SIZE, SUPP, UPDT
         #NSUP <CRLF>
         return
 
-    def READ(self):
+    def READ(self,data,filename,filetype,forced_TO=False):
         #RECORD READ
         '''
         1) User operations for the READ command are as follows:
@@ -832,7 +913,20 @@ READ, SIZE, SUPP, UPDT
         the file.
         '''
         #READ <SP> <pathname> <CRLF>
-        return
+        #STOR part of file,then STOR other half
+        #use UPDT for other half actually cause easier
+
+        """
+        print(b[0:int(math.floor(len(b)/2))])
+        print(b[int(math.floor(len(b)/2)):])
+        """
+        self.STOR(data[:int(math.floor(len(data)/2))]  ,filename,filetype,forced_TO)
+        self.STOR(data[int(math.floor(len(data)/2)):]  ,filename+"_READt",filetype,forced_TO)
+        #combining data
+        ind = self.dataname_list.index(filename)
+        self.data_list[ind] = self.data_list[ind]+self.data_list[ind+1]
+
+        self.RMD(filename+"_READt",False)
 
     def SIZE(self,file,console=True,verbose=False):
         #SIZE
@@ -864,9 +958,9 @@ READ, SIZE, SUPP, UPDT
         fpSuppressReplyText to ‘TRUE’ (enabled).
         '''
         #SUPP <CRLF>
-        return
+        self.fpSuppressReplyText = not self.fpSuppressReplyText
 
-    def UPDT(self):
+    def UPDT(self,data,filename,filetype,forced_TO=False):
         #RECORD UPDATE
         '''
         1) User operations for the UPDT command are as follows:
@@ -903,6 +997,18 @@ READ, SIZE, SUPP, UPDT
         the file
         '''
         #UPDT <SP> <pathname> <CRLF>
+        #not in: STOR
+        if filename not in self.dataname_list:
+            if not self.fpSuppressReplyText: print(F'SERVER-USER: {filename} DOESNT EXIST')
+            print('USER-USER: SENDING FILE TO SERVER NOW')
+            self.STOR(data,filename,filetype,forced_TO)
+        #already exists: RMD then STOR
+        else:
+            if not self.fpSuppressReplyText: print(F'SERVER-USER: {filename} ALREADY EXIST')
+            print('USER-USER: UPDATING FILE ON SERVER NOW')
+            self.RMD(filename)
+            self.STOR(data, filename, filetype, forced_TO)
+
         return
 
     def HELP(self,cmd=None):
@@ -918,41 +1024,41 @@ READ, SIZE, SUPP, UPDT
         if cmd == "STRU":
             print(F"{cmd}: ")
         elif cmd == "TYPE":
-            print(F"{cmd}: Return or Set filetype of file given its name; See HELP for more details/uses")
+            print(F"{cmd}: Return or Set filetype of file given its name;\nSee HELP for more details/uses")
         elif cmd == "STOR":
-            print(F"{cmd}: Store File; given file, filename, and filetype; See HELP for more details/uses")
+            print(F"{cmd}: Store File;\nGiven file, filename, and filetype;\nSee HELP for more details/uses")
         elif cmd == "RETR":
-            print(F"{cmd}: Server-Console Command to log restart marker")
+            print(F"{cmd}: Server-Console Command to log restart marker;\nNot Accessable")
         elif cmd == "PROXY":
             print(F"{cmd}: ")
         elif cmd == "REST":
-            print(F"{cmd}: User-Console Command to log restart marker")
+            print(F"{cmd}: User-Console Command to log restart marker;\nNot Accessable")
         elif cmd == "USER":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Not actually command, but rather a console var replaced with the CMD you put in.\nEx: READ,STOR,TYPE,etc")
         elif cmd == "PASS":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Enter Password for access to a Server;\nMust be following CWD Command;\nOnly 1 Server aHELvaliable with Password: ECE1150;\nSee HELP CWD")
         elif cmd == "CWD":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Save Password for access to a Server;\nIn real life, PASS _password_ would follow every CMD and it's ARG unless CWD saved it;\nChanged for this sim")
         elif cmd == "QUIT":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Log out of Server")
         elif cmd == "PORT":
             print(F"{cmd}: ")
         elif cmd == "PASV":
             print(F"{cmd}: ")
         elif cmd == "MODE":
-            print(F"{cmd}: ")
+            print(F"{cmd}: User-Console Command to toggle if it transmittion;\nNot Accessable")
         elif cmd == "RNFR":
             print(F"{cmd}: ")
         elif cmd == "RNTO":
             print(F"{cmd}: ")
         elif cmd == "ABOR":
-            print(F"{cmd}: Set ABORT Flag for STOR operation; See HELP for more details/uses")
+            print(F"{cmd}: Set ABORT Flag for STOR operation;\nSee HELP for more details/uses")
         elif cmd == "DELE":
-            print(F"{cmd}: User-to-Server-Console Command to remove a file")
+            print(F"{cmd}: User-to-Server-Console Command to remove a file;\nGiven filename")
         elif cmd == "RMD":
-            print(F"{cmd}: Server-Console Command to remove a file")
+            print(F"{cmd}: Server-Console Command to remove a file;\nNot Accessable")
         elif cmd == "MKD":
-            print(F"{cmd}: Server-Console Command to add a file")
+            print(F"{cmd}: Server-Console Command to add a file;\nNot Accessable")
         elif cmd == "LIST":
             print(F"{cmd}: ")
         elif cmd == "STAT":
@@ -972,9 +1078,9 @@ READ, SIZE, SUPP, UPDT
         elif cmd == "COPY":
             print(F"{cmd}: ")
         elif cmd == "IDLE":
-            print(F"{cmd}: Have User-Console run idle by give time specified; Ex: IDLE 0.5")
+            print(F"{cmd}: Have User-Console run idle by give time specified;\nEx: IDLE 0.5")
         elif cmd == "INTR":
-            print(F"{cmd}: Set INTR Flag for STOR operation; See HELP for more details/uses")
+            print(F"{cmd}: Set INTR Flag for STOR operation;\nSee HELP for more details/uses")
         elif cmd == "NARS":
             print(F"{cmd}: User-Console turn off its autorestart flag")
         elif cmd == "NBES":
@@ -982,13 +1088,13 @@ READ, SIZE, SUPP, UPDT
         elif cmd == "NSUP":
             print(F"{cmd}: ")
         elif cmd == "READ":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Store File;\nUploading one half of the data, then the other half;\nGiven file, filename, and filetype; See HELP for more details/uses")
         elif cmd == "SIZE":
             print(F"{cmd}: Find size of file given its name; Ex: SIZE ./lol.txt")
         elif cmd == "SUPP":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Toggle SERVER-USER Replies")
         elif cmd == "UPDT":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Store File;\nUpdating to the server duplicate filenames;\nGiven file, filename, and filetype; See HELP for more details/uses")
         elif cmd == "HELP":
             print(F"{cmd}: Gives info on CMD's")
         else:
@@ -1030,6 +1136,6 @@ UPDT <SP> <pathname> <CRLF>
 
 
 if __name__ == "__main__":
-    Feebee = FP(True)   #put "True" inside FP's initializer for debug mode (no image)
-    #Feebee.testGraph()
-    #Feebee.matplot_test()
+    #put "True" inside FP's initializer for debug mode
+        #debug mode: No graph, no passwords
+    Feebee = FP(True)
