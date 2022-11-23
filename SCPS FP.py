@@ -88,27 +88,17 @@ class FP:
     def __init__(self,debug=False):
         #https://web.archive.org/web/20130423142305/http://public.ccsds.org/publications/archive/717x0b1s.pdf
         print("network - init")
-        print("""
-==============NOTICE==============
-Some funcs arent theyre complete purpose as mandated"
-in reports due to unability to wait apporpriately to another server."
+        print(
+"""\n==============NOTICE==============
+Some funcs arent their complete purpose as mandated
+in reports due to unability to wait apporpriately to a seperate simualted server.
 
-Commands like these have instead been absorbed into others,"
-still simulating the result between the two."
+Commands like these have instead been absorbed into others,
+still simulating the result between the two.
 
-EX: ABOR becoming a set function that reacts with STOR"
-instead of using ABOR in the middle of STOR's runtime"
+EX: ABOR becoming a set function that reacts with STOR
+instead of using ABOR in the middle of STOR's runtime
 ==================================""")
-        '''
-        print("\n==============NOTICE=============="
-              "\nSome funcs arent theyre complete purpose as mandated"
-              "\nin reports due to unability to wait apporpriately to another server."
-              "\n\nCommands like these have instead been absorbed into others,"
-              "\nstill simulating the result between the two."
-              "\n\nEX: ABOR becoming a set function that reacts with STOR"
-              "\ninstead of using ABOR in the middle of STOR's runtime"
-              "\n==================================")
-          '''
 
         self.G = None
         self.add_colors=[]
@@ -132,7 +122,7 @@ instead of using ABOR in the middle of STOR's runtime"
         self.build_graph(not debug)
 
         #self.cmd_ex()
-        print("Use \"HELP\" for command examples, or \"HELP _CMD_ for info on a command\"")
+        print("Use \"HELP\" for a list of commands and examples, or \"HELP _CMD_ for info on a command\"")
         self.main_loop()
 
     '''
@@ -253,7 +243,7 @@ instead of using ABOR in the middle of STOR's runtime"
         elif cmd == "ABOR":
             self.ABOR()
         elif cmd == "DELE":
-            self.DELE()
+            self.DELE(str(arr[0]))
         elif cmd == "RMD":
             print("THIS IS A SERVER-CONSOLE COMMAND")
         elif cmd == "MKD":
@@ -924,87 +914,85 @@ READ, SIZE, SUPP, UPDT
             self.cmd_ex()
             return
 
-        try:    #HELP _CMD_
-            if cmd == "STRU":
-                print(F"{cmd}: ")
-            elif cmd == "TYPE":
-                print(F"{cmd}: Return or Set filetype of file given its name; See HELP for more details/uses")
-            elif cmd == "STOR":
-                print(F"{cmd}: Store File; given file, filename, and filetype; See HELP for more details/uses")
-            elif cmd == "RETR":
-                print(F"{cmd}: Server-Console Command to log restart marker")
-            elif cmd == "PROXY":
-                print(F"{cmd}: ")
-            elif cmd == "REST":
-                print(F"{cmd}: User-Console Command to log restart marker")
-            elif cmd == "USER":
-                print(F"{cmd}: ")
-            elif cmd == "PASS":
-                print(F"{cmd}: ")
-            elif cmd == "CWD":
-                print(F"{cmd}: ")
-            elif cmd == "QUIT":
-                print(F"{cmd}: ")
-            elif cmd == "PORT":
-                print(F"{cmd}: ")
-            elif cmd == "PASV":
-                print(F"{cmd}: ")
-            elif cmd == "MODE":
-                print(F"{cmd}: ")
-            elif cmd == "RNFR":
-                print(F"{cmd}: ")
-            elif cmd == "RNTO":
-                print(F"{cmd}: ")
-            elif cmd == "ABOR":
-                print(F"{cmd}: Set ABORT Flag for STOR operation; See HELP for more details/uses")
-            elif cmd == "DELE":
-                print(F"{cmd}: User-to-Server-Console Command to remove a file")
-            elif cmd == "RMD":
-                print(F"{cmd}: Server-Console Command to remove a file")
-            elif cmd == "MKD":
-                print(F"{cmd}: Server-Console Command to add a file")
-            elif cmd == "LIST":
-                print(F"{cmd}: ")
-            elif cmd == "STAT":
-                print(F"{cmd}: ")
-            elif cmd == "SITE":
-                print(F"{cmd}: Service commands: The document never described this cmd")
-            elif cmd == "ACCT":
-                print(F"{cmd}: Access control command: The document never described this cmd")
-            elif cmd == "CDUP":
-                print(F"{cmd}: Access control command: The document never described this cmd")
-            elif cmd == "NLST":
-                print(F"{cmd}: The document never described this cmd")
-            elif cmd == "ARST":
-                print(F"{cmd}: User-Console turn on its autorestart flag")
-            elif cmd == "BETS":
-                print(F"{cmd}: User-Console turn on its BETS flag")
-            elif cmd == "COPY":
-                print(F"{cmd}: ")
-            elif cmd == "IDLE":
-                print(F"{cmd}: Have User-Console run idle by give time specified; Ex: IDLE 0.5")
-            elif cmd == "INTR":
-                print(F"{cmd}: Set INTR Flag for STOR operation; See HELP for more details/uses")
-            elif cmd == "NARS":
-                print(F"{cmd}: User-Console turn off its autorestart flag")
-            elif cmd == "NBES":
-                print(F"{cmd}: User-Console turn off its BETS flag")
-            elif cmd == "NSUP":
-                print(F"{cmd}: ")
-            elif cmd == "READ":
-                print(F"{cmd}: ")
-            elif cmd == "SIZE":
-                print(F"{cmd}: Find size of file given its name; Ex: SIZE ./lol.txt")
-            elif cmd == "SUPP":
-                print(F"{cmd}: ")
-            elif cmd == "UPDT":
-                print(F"{cmd}: ")
-            elif cmd == "HELP":
-                print(F"{cmd}: Gives info on CMD's")
-            else:
-                print("ERROR: CMD NOT RECOGNIZED")
-        except Exception as e:
-            print(F"ERROR RUNNING COMMAND: {e}")
+        #HELP _CMD_
+        if cmd == "STRU":
+            print(F"{cmd}: ")
+        elif cmd == "TYPE":
+            print(F"{cmd}: Return or Set filetype of file given its name; See HELP for more details/uses")
+        elif cmd == "STOR":
+            print(F"{cmd}: Store File; given file, filename, and filetype; See HELP for more details/uses")
+        elif cmd == "RETR":
+            print(F"{cmd}: Server-Console Command to log restart marker")
+        elif cmd == "PROXY":
+            print(F"{cmd}: ")
+        elif cmd == "REST":
+            print(F"{cmd}: User-Console Command to log restart marker")
+        elif cmd == "USER":
+            print(F"{cmd}: ")
+        elif cmd == "PASS":
+            print(F"{cmd}: ")
+        elif cmd == "CWD":
+            print(F"{cmd}: ")
+        elif cmd == "QUIT":
+            print(F"{cmd}: ")
+        elif cmd == "PORT":
+            print(F"{cmd}: ")
+        elif cmd == "PASV":
+            print(F"{cmd}: ")
+        elif cmd == "MODE":
+            print(F"{cmd}: ")
+        elif cmd == "RNFR":
+            print(F"{cmd}: ")
+        elif cmd == "RNTO":
+            print(F"{cmd}: ")
+        elif cmd == "ABOR":
+            print(F"{cmd}: Set ABORT Flag for STOR operation; See HELP for more details/uses")
+        elif cmd == "DELE":
+            print(F"{cmd}: User-to-Server-Console Command to remove a file")
+        elif cmd == "RMD":
+            print(F"{cmd}: Server-Console Command to remove a file")
+        elif cmd == "MKD":
+            print(F"{cmd}: Server-Console Command to add a file")
+        elif cmd == "LIST":
+            print(F"{cmd}: ")
+        elif cmd == "STAT":
+            print(F"{cmd}: ")
+        elif cmd == "SITE":
+            print(F"{cmd}: Service commands: The document never described this cmd")
+        elif cmd == "ACCT":
+            print(F"{cmd}: Access control command: The document never described this cmd")
+        elif cmd == "CDUP":
+            print(F"{cmd}: Access control command: The document never described this cmd")
+        elif cmd == "NLST":
+            print(F"{cmd}: The document never described this cmd")
+        elif cmd == "ARST":
+            print(F"{cmd}: User-Console turn on its autorestart flag")
+        elif cmd == "BETS":
+            print(F"{cmd}: User-Console turn on its BETS flag")
+        elif cmd == "COPY":
+            print(F"{cmd}: ")
+        elif cmd == "IDLE":
+            print(F"{cmd}: Have User-Console run idle by give time specified; Ex: IDLE 0.5")
+        elif cmd == "INTR":
+            print(F"{cmd}: Set INTR Flag for STOR operation; See HELP for more details/uses")
+        elif cmd == "NARS":
+            print(F"{cmd}: User-Console turn off its autorestart flag")
+        elif cmd == "NBES":
+            print(F"{cmd}: User-Console turn off its BETS flag")
+        elif cmd == "NSUP":
+            print(F"{cmd}: ")
+        elif cmd == "READ":
+            print(F"{cmd}: ")
+        elif cmd == "SIZE":
+            print(F"{cmd}: Find size of file given its name; Ex: SIZE ./lol.txt")
+        elif cmd == "SUPP":
+            print(F"{cmd}: ")
+        elif cmd == "UPDT":
+            print(F"{cmd}: ")
+        elif cmd == "HELP":
+            print(F"{cmd}: Gives info on CMD's")
+        else:
+            print("ERROR: HELP: CMD NOT RECOGNIZED")
 '''
 funtions to add
 ACCESS CONTROL COMMANDS: pg54
@@ -1042,6 +1030,6 @@ UPDT <SP> <pathname> <CRLF>
 
 
 if __name__ == "__main__":
-    Feebee = FP(True)
+    Feebee = FP(True)   #put "True" inside FP's initializer for debug mode (no image)
     #Feebee.testGraph()
     #Feebee.matplot_test()
