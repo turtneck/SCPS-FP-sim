@@ -294,8 +294,7 @@ Enter: "CWD PASS ___" to start the sim
         elif cmd == "LIST":
             self.LIST(arr)
         elif cmd == "STAT":
-            #self.STAT()
-            return
+            self.STAT()
         elif cmd == "SITE":
             self.SITE()
         elif cmd == "ACCT":
@@ -309,8 +308,7 @@ Enter: "CWD PASS ___" to start the sim
         elif cmd == "BETS":
             self.BETS()
         elif cmd == "COPY":
-            #self.COPY()
-            return
+            self.COPY(arr[0],arr[1])
         elif cmd == "IDLE":
             self.IDLE(float(arr[0]))
         elif cmd == "INTR":
@@ -379,19 +377,25 @@ DELE ./lol.txt
 ---
 READ 123456789 ./lol.txt ASCII   : send first half of data to a server,
                                    then the other in another transmission
+                                   note: can see how it did this with the "debug" command
 ---
 LIST lol ./lol.txt ASCII lmao ./lmao.txt ASCII    :send multiple files in one command
+---
+STOR lol ./lol.txt ASCII    : STOR two txt files then rewrite the 2nd
+STOR lol ./lmao.txt ASCII     with a copy of the first
+COPY ./lol.txt ./lmao.txt
 
+==================================
 CMD LIST:
 USER, PASS, CWD, QUIT, PORT, PASV, TYPE, STRU, 
 MODE, RETR, STOR, RNFR, RNTO, REST, ABOR, DELE, 
 RMD, MKD, LIST, STAT, SITE, ACCT, CDUP, NLST, 
-NOOP, PWD, STOU, SYST, APPE, HELP,
-debug (for sim only)
+NOOP, PWD, STOU, SYST, APPE, HELP
 
 ARST, BETS, COPY, IDLE, INTR, NARS, NBES, NSUP, 
 READ, SIZE, SUPP, UPDT
-""")
+
+debug (for this sim only)""")
 
     #actual commands
     def STRU(self,inp):
@@ -431,6 +435,7 @@ READ, SIZE, SUPP, UPDT
         if "ISS Server" not in self.adj_better("User console"): raise TypeError("STOR(): CONSOLE NOT CONNECTED TO SERVER: STOR()")
         if name[:2] != "./": raise TypeError(F'STOR(): {name}: FILENAME MUST START WITH "./" FOR DIRECTORY PURPOSES')
 
+        if self.flag_BETS: print("USER-USER: TRANSMITTING IN BEST EFFORT TRANSPORT SERVICE MODE\t\t[[This is for SCPS-TP, not simulated]]")
         if file_type == "PACKET": self.STRU("R")
 
         #1.)
@@ -630,8 +635,8 @@ READ, SIZE, SUPP, UPDT
         - User-FP sends PASV per transfer
         '''
         if not part: print("USER-SERVER: [Server Port Request]")
-        else: print("SERVER-USER: 452,92,806,528\t\t(made up for this sim)")
-        return
+        else:
+            if not self.fpSuppressReplyText: print("SERVER-USER: 452,92,806,528\t\t(made up for this sim)")
 
     def MODE(self):
         #toogle if in transmittion
@@ -717,7 +722,7 @@ READ, SIZE, SUPP, UPDT
         if len(arr)%3 != 0: raise TypeError("LIST(): INVALID LIST")
         new_arr = arr
         while new_arr:
-            print(F"arr: {new_arr}")
+            #print(F"arr: {new_arr}")
             self.STOR(new_arr[0],new_arr[1],new_arr[2])
             new_arr.pop(0); new_arr.pop(0); new_arr.pop(0)
 
@@ -734,7 +739,10 @@ READ, SIZE, SUPP, UPDT
             - General status information includes current values of all
               transfer parameters and the status of connections
         '''
-        return
+        if not self.fpSuppressReplyText: return
+
+        if self.mode: print(F"SERVER-USER: STATUS: IN TRANSMISSION;\n{self.data_path}")
+        else: print("SERVER-USER: STATUS: NOT CURRENTLY IN TRANSMISSION")
 
     def SITE(self):
         #blank on the list of cmd explanation, bruh
@@ -785,7 +793,7 @@ READ, SIZE, SUPP, UPDT
         self.flag_BETS = True
         return
 
-    def COPY(self):
+    def COPY(self,filename1,filename2):
         #COPY
         '''
         The COPY command shall cause the server-FP to copy the file specified in the
@@ -794,6 +802,11 @@ READ, SIZE, SUPP, UPDT
         – The server-FP shall report the success or failure of the copy in a reply.
         '''
         #COPY <SP> <pathname> <SP> <pathname> <CRLF>
+        if filename1 == filename2: raise TypeError("CANNOT DUPLICATE TO SAME FILE LOCATION")
+
+        ind = self.dataname_list.index(filename1)
+        self.UPDT(self.data_list[ind],filename2,self.datatype_list[ind])
+
         return
 
     def IDLE(self, inp):
@@ -1070,7 +1083,10 @@ READ, SIZE, SUPP, UPDT
         elif cmd == "LIST":
             print(F"{cmd}: Store multiple files in one command;\nGiven file, filename, and filetype;\nSee HELP for more details/uses")
         elif cmd == "STAT":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Server-to-User-Console Command to check if the server is already transmitting;\n"
+                  F"Normally can be used between file transfers,\nwhich would thent he server would give list of currently transmitted file names;\n"
+                  F"However due to the unability to wait apporpriately to a seperate simualted server;\n\n"
+                  F"Both outcomes of command exists in code but you are unable to see the effect during transmittion")
         elif cmd == "SITE":
             print(F"{cmd}: Service commands: Description missing from released Document")
         elif cmd == "ACCT":
@@ -1084,7 +1100,7 @@ READ, SIZE, SUPP, UPDT
         elif cmd == "BETS":
             print(F"{cmd}: User-Console command to turn on its BETS flag")
         elif cmd == "COPY":
-            print(F"{cmd}: ")
+            print(F"{cmd}: Copy contents of one filename into another;\nGiven filename1(copy data from), filename2(copy data to);\nSee HELP for more details/uses")
         elif cmd == "IDLE":
             print(F"{cmd}: Have User-Console run idle by give time specified;\nEx: IDLE 0.5")
         elif cmd == "INTR":
@@ -1096,13 +1112,13 @@ READ, SIZE, SUPP, UPDT
         elif cmd == "NSUP":
             print(F"{cmd}: Unsuppress SERVER-USER Replies;\nfpSuppressReplyText = False")
         elif cmd == "READ":
-            print(F"{cmd}: Store File;\nUploading one half of the data, then the other half;\nGiven file, filename, and filetype; See HELP for more details/uses")
+            print(F"{cmd}: Store File;\nUploading one half of the data, then the other half;\nGiven file, filename, and filetype;\nSee HELP for more details/uses")
         elif cmd == "SIZE":
             print(F"{cmd}: Find size of file given its name; Ex: SIZE ./lol.txt")
         elif cmd == "SUPP":
             print(F"{cmd}: Suppress SERVER-USER Replies;\nfpSuppressReplyText = True")
         elif cmd == "UPDT":
-            print(F"{cmd}: Store File;\nUpdating to the server duplicate filenames;\nGiven file, filename, and filetype; See HELP for more details/uses")
+            print(F"{cmd}: Store File;\nUpdating to the server duplicate filenames;\nGiven file, filename, and filetype;\nSee HELP for more details/uses")
         elif cmd == "HELP":
             print(F"{cmd}: Gives info on CMD's")
         elif cmd == "debug":
